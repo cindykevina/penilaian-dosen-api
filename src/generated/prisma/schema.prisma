@@ -1,0 +1,159 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+enum Role {
+  ADMIN
+  EVALUATOR
+  KA_HRD
+  REKTOR
+}
+
+enum JenisPenilaian {
+  BENEFIT
+  COST
+}
+
+enum Jabatan {
+  GURU_BESAR
+  LEKTOR_KEPALA
+  LEKTOR
+  ASSISTEN_AHLI
+  TENAGA_PENGAJAR
+}
+
+enum ReportStatus {
+  PENDING
+  REJECT_KA
+  REJECT_REKTOR
+  APPROVE_KA
+  APPROVE_REKTOR
+}
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int         @id @default(autoincrement())
+  username  String      @unique
+  password  String
+  role      Role
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+  Penilaian Penilaian[]
+
+  @@map("user")
+}
+
+model Periode {
+  id        Int      @id @default(autoincrement())
+  periode   String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  Report    Report[]
+
+  @@map("periode")
+}
+
+model Homebase {
+  id        Int      @id @default(autoincrement())
+  nama      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  Dosen     Dosen[]
+
+  @@map("homebase")
+}
+
+model Kriteria {
+  id          Int           @id @default(autoincrement())
+  nama        String        @unique
+  bobot       Float
+  deskripsi   String        @db.Text
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  SubKriteria SubKriteria[]
+
+  @@map("kriteria")
+}
+
+model Dosen {
+  id         Int       @id @default(autoincrement())
+  nama       String
+  nip        String    @unique
+  jabatan    Jabatan
+  homebase   Homebase  @relation(fields: [homebaseId], references: [id])
+  homebaseId Int       @map("homebase_id")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  Report     Report[]
+  Dokumen    Dokumen[]
+
+  @@map("dosen")
+}
+
+model Report {
+  id         Int          @id @default(autoincrement())
+  nilaiAkhir Float?       @map("nilai_akhir")
+  status     ReportStatus
+  dosen      Dosen        @relation(fields: [dosenId], references: [id])
+  dosenId    Int          @map("dosen_id")
+  periode    Periode      @relation(fields: [periodeId], references: [id])
+  periodeId  Int          @map("periode_id")
+  deskripsi  String       @db.Text
+  createdAt  DateTime     @default(now()) @map("created_at")
+  updatedAt  DateTime     @updatedAt @map("updated_at")
+  Penilaian  Penilaian[]
+
+  @@map("report")
+}
+
+model SubKriteria {
+  id            Int            @id @default(autoincrement())
+  nama          String
+  nilaiMaksimal Int            @map("nilai_maksimal")
+  kriteria      Kriteria       @relation(fields: [kriteriaId], references: [id])
+  kriteriaId    Int            @map("kriteria_id")
+  jenis         JenisPenilaian
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  Penilaian     Penilaian[]
+
+  @@map("sub_kriteria")
+}
+
+model Penilaian {
+  id            Int         @id @default(autoincrement())
+  nilai         Float
+  report        Report      @relation(fields: [reportId], references: [id])
+  reportId      Int         @map("report_id")
+  subKriteria   SubKriteria @relation(fields: [subKriteriaId], references: [id])
+  subKriteriaId Int         @map("sub_kriteria_id")
+  evaluator     User        @relation(fields: [evaluatorId], references: [id])
+  evaluatorId   Int         @map("evaluator_id")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  @@map("penilaian")
+}
+
+model Dokumen {
+  id         Int      @id @default(autoincrement())
+  judul      String
+  dokumenUrl String   @map("dokumen_url")
+  dosen      Dosen    @relation(fields: [dosenId], references: [id])
+  dosenId    Int      @map("dosen_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("dokumen")
+}
