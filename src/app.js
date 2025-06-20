@@ -7,7 +7,10 @@ const bodyParser = require("body-parser");
 
 const app = express();
 app.use(bodyParser.json());
-app.use(cors());
+app.use(cors({
+  origin: "https://penilaian-dosen-fe.vercel.app",
+  credentials: true
+}));
 app.use(express.json());
 app.use("/api", routes); // Prefix semua route dengan /api
 
